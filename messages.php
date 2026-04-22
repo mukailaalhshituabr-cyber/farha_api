@@ -55,6 +55,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $m['is_read'] = (bool) $m['is_read'];
     }
 
+    $countStmt = $db->prepare("SELECT COUNT(*) FROM messages WHERE conversation_id = ?");
+    $countStmt->execute([$conversationId]);
+    $total = (int) $countStmt->fetchColumn();
+
     // Mark messages from the other party as read
     $db->prepare("
         UPDATE messages
@@ -64,7 +68,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
           AND  is_read         = 0
     ")->execute([$conversationId, $userId]);
 
-    Response::success(['messages' => $msgs]);
+    Response::success([
+        'messages' => $msgs,
+        'has_more' => ($offset + count($msgs)) < $total,
+        'total'    => $total,
+        'page'     => $page,
+    ]);
 }
 
 // ── POST: send message ────────────────────────────────────────────────────────

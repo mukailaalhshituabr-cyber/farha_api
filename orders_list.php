@@ -34,7 +34,15 @@ if ($userType === 'customer') {
 $where  = [$roleClause];
 $params = [$roleParam];
 
-if ($status) { $where[] = 'o.status = ?'; $params[] = $status; }
+if ($status === 'active') {
+    $active = ['pending','confirmed','cutting','sewing','ready'];
+    $placeholders = implode(',', array_fill(0, count($active), '?'));
+    $where[]  = "o.status IN ($placeholders)";
+    $params   = array_merge($params, $active);
+} elseif ($status) {
+    $where[] = 'o.status = ?';
+    $params[] = $status;
+}
 
 $whereClause = implode(' AND ', $where);
 

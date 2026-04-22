@@ -55,6 +55,16 @@ $db->prepare('
     $body['estimated_completion'] ?? null,
 ]);
 
+// Auto-create a conversation between the customer and tailor if one doesn't exist
+$convCheck = $db->prepare(
+    'SELECT id FROM conversations WHERE customer_id = ? AND tailor_id = ? LIMIT 1');
+$convCheck->execute([$customer['id'], $v->get('tailor_id')]);
+if (!$convCheck->fetch()) {
+    $db->prepare(
+        'INSERT INTO conversations (id, customer_id, tailor_id, order_id) VALUES (?, ?, ?, ?)')
+       ->execute([generateUuid(), $customer['id'], $v->get('tailor_id'), $orderId]);
+}
+
 Response::success(
     ['order_id' => $orderId, 'reference_number' => $reference],
     'Order placed successfully.',

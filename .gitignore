@@ -1,0 +1,18 @@
+# ── Sensitive configuration — NEVER commit these ─────────────────────────────
+config.php
+admin_setup.php
+
+# ── Seed & migration files — contain real data / destructive SQL ──────────────
+farha_full_seed.php
+farha_seed.php
+farha_products_seed.php
+farha_admin_migration.sql
+
+# ── Uploaded files ────────────────────────────────────────────────────────────
+uploads/
+
+# ── OS / editor junk ──────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

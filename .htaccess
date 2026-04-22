@@ -1,0 +1,25 @@
+# Farha API — minimal .htaccess for shared/university hosting
+# Removed php_flag/php_value — those only work with mod_php, not FastCGI/FPM
+
+Options -Indexes
+
+# PHP-FPM strips the Authorization header — restore it via every available method.
+
+# 1. mod_setenvif (works if module is enabled)
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+SetEnvIf X-Authorization "(.*)" HTTP_X_AUTHORIZATION=$1
+
+# 2. mod_rewrite fallback (works on most Apache shared hosts)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    RewriteCond %{HTTP:X-Authorization} .
+    RewriteRule .* - [E=HTTP_X_AUTHORIZATION:%{HTTP:X-Authorization}]
+</IfModule>
+
+# Block direct browser access to internal files
+<FilesMatch "^(config|PHPMailer|SMTP|Exception)\.php$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>

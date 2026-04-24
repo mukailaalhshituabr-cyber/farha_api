@@ -111,23 +111,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 // ── POST: start or return existing conversation ───────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $body = getBody();
-    $v    = (new Validator($body))->required('tailor_id', 'Tailor');
-    if ($v->fails()) Response::validationError($v->errors());
 
-    $custStmt = $db->prepare('SELECT id FROM customers WHERE user_id = ? LIMIT 1');
-    $custStmt->execute([$userId]);
-    $customer = $custStmt->fetch();
-    if (!$customer) Response::forbidden('Only customers can start conversations.');
+    $customerId = null;
+    $tailorId   = null;
+
+    if ($payload['user_type'] === 'customer') {
+        // Customer provides the tailor's tailors.id
+        $v = (new Validator($body))->required('tailor_id', 'Tailor');
+        if ($v->fails()) Response::validationError($v->errors());
+
+        $custStmt = $db->prepare('SELECT id FROM customers WHERE user_id = ? LIMIT 1');
+        $custStmt->execute([$userId]);
+        $customer = $custStmt->fetch();
+        if (!$customer) Response::forbidden('Customer profile not found.');
+
+        $customerId = $customer['id'];
+        $tailorId   = $v->get('tailor_id');
+
+    } else {
+        // Tailor provides the customer's customers.id
+        $v = (new Validator($body))->required('customer_id', 'Customer');
+        if ($v->fails()) Response::validationError($v->errors());
+
+        $tailorStmt = $db->prepare('SELECT id FROM tailors WHERE user_id = ? LIMIT 1');
+        $tailorStmt->execute([$userId]);
+        $tailor = $tailorStmt->fetch();
+        if (!$tailor) Response::forbidden('Tailor profile not found.');
+
+        $tailorId   = $tailor['id'];
+        $customerId = $v->get('customer_id');
+    }
 
     $existing = $db->prepare(
         'SELECT id FROM conversations WHERE customer_id = ? AND tailor_id = ? LIMIT 1');
-    $existing->execute([$customer['id'], $v->get('tailor_id')]);
+    $existing->execute([$customerId, $tailorId]);
     $conv = $existing->fetch();
 
     if (!$conv) {
         $convId = generateUuid();
         $db->prepare('INSERT INTO conversations (id, customer_id, tailor_id) VALUES (?, ?, ?)')
-           ->execute([$convId, $customer['id'], $v->get('tailor_id')]);
+           ->execute([$convId, $customerId, $tailorId]);
     } else {
         $convId = $conv['id'];
     }

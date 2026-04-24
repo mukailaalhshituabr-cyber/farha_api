@@ -20,13 +20,25 @@ $tailorStmt->execute([$payload['user_id']]);
 $tailor = $tailorStmt->fetch();
 if (!$tailor) Response::notFound('Tailor profile not found.');
 
-$chk = $db->prepare('SELECT id, status FROM orders WHERE id = ? AND tailor_id = ? LIMIT 1');
+$chk = $db->prepare('SELECT id, status, total_amount, paid_amount FROM orders WHERE id = ? AND tailor_id = ? LIMIT 1');
 $chk->execute([$orderId, $tailor['id']]);
 $order = $chk->fetch();
 if (!$order) Response::notFound('Order not found or not yours.');
 
 if ($order['status'] === 'cancelled') Response::error('Cannot update a cancelled order.', 422);
 if ($order['status'] === 'delivered') Response::error('Order is already delivered.', 422);
+
+// Block delivery if the customer has not paid in full
+if ($v->get('status') === 'delivered') {
+    $paid  = (float)$order['paid_amount'];
+    $total = (float)$order['total_amount'];
+    if ($paid < $total) {
+        Response::error(
+            'Cannot mark as delivered: balance of ' . number_format($total - $paid, 2) . ' is still outstanding.',
+            422
+        );
+    }
+}
 
 $params = [$v->get('status')];
 $sql    = 'UPDATE orders SET status = ?';

@@ -40,7 +40,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                m.conversation_id,
                m.sender_id,
                m.message_text,
-               m.image_url,
                m.is_read,
                m.created_at
         FROM   messages m
@@ -98,15 +97,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $db->prepare('
         UPDATE conversations
-        SET    last_message    = ?,
-               last_message_at = NOW(),
-               updated_at      = NOW()
+        SET    last_message_at = NOW()
         WHERE  id = ?
-    ')->execute([sanitizeString($v->get('message_text')), $convId]);
+    ')->execute([$convId]);
 
     // Return the created message so the client can display it immediately
     $newMsg = $db->prepare('
-        SELECT id, conversation_id, sender_id, message_text, image_url, is_read, created_at
+        SELECT id, conversation_id, sender_id, message_text, is_read, created_at
         FROM   messages WHERE id = ? LIMIT 1
     ');
     $newMsg->execute([$msgId]);

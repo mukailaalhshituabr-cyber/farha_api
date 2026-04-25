@@ -21,9 +21,9 @@ $v = (new Validator($body))
 if ($v->fails()) Response::validationError($v->errors());
 
 $role = in_array($body['role'] ?? '', ['super_admin', 'moderator'], true)
-    ? $body['role']
+    ? $body['role'] 
     : 'moderator';
-
+ 
 $db   = Database::connect();
 $stmt = $db->prepare('SELECT id FROM admins WHERE email = ? LIMIT 1');
 $stmt->execute([strtolower($v->get('email'))]);

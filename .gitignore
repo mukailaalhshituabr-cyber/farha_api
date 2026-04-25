@@ -1,9 +1,13 @@
 # ── Sensitive configuration — NEVER commit these ─────────────────────────────
 config.php
 admin_setup.php
+admin_create.php
+admin_test.php
 admin_debug.php
 test_*.php
 *_debug.php
+*_create.php
+*_test.php
 
 # ── Seed & migration files — contain real data / destructive SQL ──────────────
 farha_full_seed.php

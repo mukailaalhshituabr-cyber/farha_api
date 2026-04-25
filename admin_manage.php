@@ -7,7 +7,7 @@ $payload = Auth::requireAdmin();
 
 if (($payload['role'] ?? '') !== 'super_admin') {
     Response::forbidden('Only super admins can create new admin accounts.');
-}
+} 
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') Response::error('Method not allowed.', 405);
 

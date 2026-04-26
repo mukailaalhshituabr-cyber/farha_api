@@ -3,6 +3,38 @@
 // POST /farha_api/verify_email.php              (resend verification)
 require_once __DIR__ . '/config.php';
 
+function htmlResponse(string $type, string $title, string $message): never {
+    $isSuccess = $type === 'success';
+    $color     = $isSuccess ? '#74262b' : '#b91c1c';
+    $icon      = $isSuccess ? '✅' : '❌';
+    http_response_code($isSuccess ? 200 : 400);
+    header('Content-Type: text/html; charset=UTF-8');
+    echo <<<HTML
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Farha — {$title}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .card{background:#fff;border-radius:20px;padding:40px 32px;max-width:440px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.1)}
+  .icon{font-size:56px;margin-bottom:20px}
+  h1{color:{$color};font-size:22px;margin-bottom:12px}
+  p{color:#555;font-size:15px;line-height:1.7;margin-bottom:28px}
+  .btn{display:inline-block;background:{$color};color:#fff;text-decoration:none;padding:14px 32px;border-radius:50px;font-size:15px;font-weight:600}
+  .footer{margin-top:24px;font-size:12px;color:#aaa}
+</style></head>
+<body><div class="card">
+  <div class="icon">{$icon}</div>
+  <h1>{$title}</h1>
+  <p>{$message}</p>
+  <div class="footer">Farha — The Digital Atelier</div>
+</div></body></html>
+HTML;
+    exit;
+}
+
 $db = Database::connect();
 
 // ── GET: verify from email link ───────────────────────────────────────────────
@@ -10,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $token = trim($_GET['token'] ?? '');
 
     if (empty($token) || !preg_match('/^[a-f0-9]{64}$/', $token)) {
-        Response::error('Invalid verification link.', 400);
+        htmlResponse('error', 'Invalid Link', 'This verification link is invalid. Please request a new one from the app.');
     }
 
     $stmt = $db->prepare('
@@ -23,12 +55,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $stmt->execute([$token]);
     $record = $stmt->fetch();
 
-    if (!$record) Response::error('Verification link not found or already used.', 404);
+    if (!$record) {
+        htmlResponse('error', 'Link Not Found', 'This verification link was not found or has already been used. You can request a new one from the Farha app.');
+    }
     if ($record['used_at'] !== null || $record['is_verified']) {
-        Response::success(null, 'Your email is already verified. You can log in.');
+        htmlResponse('success', 'Already Verified', 'Your email is already verified. Open the Farha app and log in.');
     }
     if (strtotime($record['expires_at']) < time()) {
-        Response::error('This verification link has expired. Please request a new one.', 410);
+        htmlResponse('error', 'Link Expired', 'This verification link has expired (links are valid for 24 hours). Open the Farha app and tap "Resend Email" to get a new link.');
     }
 
     try {
@@ -39,10 +73,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     } catch (PDOException $e) {
         $db->rollBack();
         error_log('Email verify error: ' . $e->getMessage());
-        Response::error('Verification failed. Please try again.', 500);
+        htmlResponse('error', 'Verification Failed', 'Something went wrong on our end. Please try again or contact support.');
     }
 
-    Response::success(null, 'Email verified successfully! You can now log in to your Farha account.');
+    htmlResponse('success', 'Email Verified!', 'Your email has been verified successfully. Open the Farha app and log in to your account.');
 }
 
 // ── POST: resend verification email ──────────────────────────────────────────

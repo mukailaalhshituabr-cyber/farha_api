@@ -12,7 +12,7 @@ $file  = $_FILES['photo'];
 $finfo = finfo_open(FILEINFO_MIME_TYPE);
 $mime  = finfo_file($finfo, $file['tmp_name']);
 finfo_close($finfo);
-
+ 
 if (!in_array($mime, ALLOWED_IMG_TYPES, true)) {
     Response::error('Invalid file type. Allowed: JPEG, PNG, WebP.', 422);
 }
@@ -22,7 +22,12 @@ if ($file['size'] > MAX_IMAGE_SIZE) {
 
 $uploadDir = UPLOAD_PATH . 'products/';
 if (!is_dir($uploadDir)) {
-    mkdir($uploadDir, 0755, true);
+    if (!mkdir($uploadDir, 0755, true)) {
+        Response::error('Upload directory could not be created. Please create farha_api/uploads/products/ on the server.', 500);
+    }
+}
+if (!is_writable($uploadDir)) {
+    Response::error('Upload directory is not writable. Run: chmod 755 farha_api/uploads/products on the server.', 500);
 }
 
 $ext      = match($mime) {

@@ -11,7 +11,7 @@ $userId  = $payload['user_id'];
 if (!isset($_FILES['photo'])) {
     Response::error('No photo received. Check PHP upload_max_filesize and post_max_size settings.', 400);
 }
-
+ 
 $file      = $_FILES['photo'];
 $phpErrors = [
     UPLOAD_ERR_INI_SIZE   => 'File exceeds server upload limit (upload_max_filesize).',
